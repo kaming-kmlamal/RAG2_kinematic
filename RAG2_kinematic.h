@@ -17,7 +17,7 @@ using namespace std;
 
 // joint state value for forward kinematic calculation (FK input) 
 // it should be in radian
-float joint_angle[6]={(0*PI)/180, (90*PI)/180,(20*PI)/180,(20*PI)/180,(10*PI)/180,(20*PI)/180};
+float joint_angle[6]={(0*PI)/180, (0*PI)/180,(0*PI)/180,(0*PI)/180,(0.8*PI)/180,(0*PI)/180};
 
 
 // Parameters for DH convention (i-1 th ahlpe, i-1 th a, i th d, i th theta)
@@ -59,6 +59,10 @@ void FK_calculation (float joint_angle[6]);
 // inverse kinematic calculation
 void IK_calculation(float IK_matric [4][4]);
 
+// construction of translation_matric for IK input. using the x-y-z fixed angle systems
+// x-y-z fixed coordinate is mean by first rotate x axis by Rx then y-axis by Ry then z-axis by Rz. To perform rotation of a coordinate
+// the last three parameter is is the tranlation from A to B by x-asix x mm then y asix y mm then z asix z mm
+void translation_matric(float IK_matric [4][4], float Rx,float Ry,float Rz,float x,float y,float z);
 
 void print_DH_value();
 
@@ -71,5 +75,6 @@ void print_IK_result (int id);
 void print_joint_angle(float joint_angle[6], int id);
 
 void print_IK_matric(float IK_matric [4][4]);
+
 
 #endif //__RAG2_KINEMATIC_H

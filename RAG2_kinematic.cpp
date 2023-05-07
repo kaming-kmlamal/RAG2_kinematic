@@ -134,7 +134,7 @@ void IK_calculation(float IK_matric [4][4])
         joint_angle_result[1+i][1] = theta23 - joint_angle_result[0+i][2];
     }
 
-/////////////////////// joint_456-1 //////////////////////////////
+/////////////////////// joint_456 //////////////////////////////
     for (int i=0; i<8 ;i +=2){
         float r13   = IK_matric[0][2];
         float s1    = sin(joint_angle_result[0+i][0]);
@@ -145,7 +145,15 @@ void IK_calculation(float IK_matric [4][4])
         float c23   = (((a2*s3-d4)*pz)+(a2*c3)*((c1*px)+(s1*py)))  / ((pz*pz)+((c1*px+s1*py)*(c1*px+s1*py)));
         float r33   = IK_matric[2][2];
         float s23   = (-(a2*c3)*pz + ((c1*px)+(s1*py))*(-d4+(a2*s3))) / ((pz*pz)+((c1*px+s1*py)*(c1*px+s1*py)));
-        joint_angle_result[0+i][3] = atan2( (-r13*s1)+(r23*c1),(-r13*c1*c23)-(r23*s1*c23)+(r33*s23));
+        // If the angle of joint 5 is zero, then joint 4 and joint 6 are collinear. The angle of joint 4 can be chosen arbitrarily. 
+        // this if case is to detect is it colinear. And i arbitrarily chose the angle 0 as joint4 
+        // by chosing 0.01. if the angle of joint 5 is smaller than 0.8 degree then joint 4 is zero 
+        if (abs((-r13*s1)+(r23*c1))<0.01 && abs((-r13*c1*c23)-(r23*s1*c23)+(r33*s23))<0.01 ){
+             joint_angle_result[0+i][3] =0;
+        }else{
+            joint_angle_result[0+i][3] = atan2( (-r13*s1)+(r23*c1),(-r13*c1*c23)-(r23*s1*c23)+(r33*s23));
+
+        }
 
         float s4    = sin(joint_angle_result[0+i][3]);
         float c4    = cos(joint_angle_result[0+i][3]);
@@ -165,6 +173,31 @@ void IK_calculation(float IK_matric [4][4])
         joint_angle_result[1+i][5] = joint_angle_result[0+i][5]+PI;
     }
 }
+
+void translation_matric(float IK_matric [4][4], float Rx,float Ry,float Rz,float x,float y,float z){
+    IK_matric[0][0]= cos(Rz)*cos(Ry);
+    IK_matric[0][1]= cos(Rz)*sin(Ry)*sin(Rx)-sin(Rz)*cos(Rx);
+    IK_matric[0][2]= cos(Rz)*sin(Ry)*cos(Rx)+sin(Rz)*sin(Rx);
+    IK_matric[0][3]= x;
+
+    IK_matric[1][0]= sin(Rz)*cos(Ry);
+    IK_matric[1][1]= sin(Rz)*sin(Ry)*sin(Rx)+cos(Rz)*cos(Rx);
+    IK_matric[1][2]= sin(Rz)*sin(Ry)*cos(Rx)-cos(Rz)*sin(Rx);
+    IK_matric[1][3]= y;
+
+    IK_matric[2][0]= -sin(Ry);
+    IK_matric[2][1]= cos(Ry)*sin(Rx);
+    IK_matric[2][2]= cos(Ry)*cos(Rx);
+    IK_matric[2][3]= z;
+
+    IK_matric[3][0]= 0;
+    IK_matric[3][1]= 0;
+    IK_matric[3][2]= 0;
+    IK_matric[3][3]= 1;
+
+}
+
+
 
 void print_DH_value()
 {
@@ -238,6 +271,7 @@ void print_IK_matric(float IK_matric [4][4])
         for (int k=0; k<4;k++){
             cout << IK_matric[j][k] << '\t';
         }
+        cout <<endl;
     }
 }
 
@@ -252,15 +286,21 @@ int main (){
     FK_calculation (joint_angle);
     print_fk_result();
 
+
     //calcutation for the result that from previous FK 
     IK_calculation(fk_matric_result);
     print_IK_result (1);
 
-    // choosing one of the result from IK reuslt and test does it give right coordinate matric
+    //choosing one of the result from IK reuslt and test does it give right coordinate matric
     reset_fk_matric ();
     FK_calculation (joint_angle_result[3]);
     print_fk_result();
 
+    // // calculation from direct matric calculation
+    // translation_matric(IK_matric,0,(20*PI)/180,0,250,0,-250);
+    // print_IK_matric(IK_matric);
+    // IK_calculation(IK_matric);
+    // print_IK_result (1);
 
 
 
