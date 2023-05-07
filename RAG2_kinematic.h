@@ -21,7 +21,7 @@ float joint_angle[6]={(0*PI)/180, (90*PI)/180,(20*PI)/180,(20*PI)/180,(10*PI)/18
 
 
 // Parameters for DH convention (i-1 th ahlpe, i-1 th a, i th d, i th theta)
-// this martic give the info of robot structure and init state 
+// this martic give the info of robot structure and state 
 float DH_value [6][4]={ {0,0,0,joint_angle[0]},
                         {-0.5*PI,0,0,joint_angle[1]},
                         {0,250,0,joint_angle[2]},

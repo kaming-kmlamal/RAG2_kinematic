@@ -90,8 +90,7 @@ void FK_calculation (float joint_angle[6]){
         memcpy(temp_result,fk_matric_result,sizeof(fk_matric_result));
     } 
 
-    //putting matric for Inverse kinematic testing (testing)
-    memcpy (IK_matric, fk_matric_result, sizeof(fk_matric_result));
+
 }
 
 
