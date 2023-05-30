@@ -1,6 +1,10 @@
+/*
+auther: kaming
+file name: RAG2_kinematic.cpp
+project: forward and inverse kinematics for a RAG2 robotic arm
+*/
+
 #include "RAG2_kinematic.h"
-
-
 
 // Matrix to store the transformation matrix for each link. for Forward kinematic
 float fk_matric [7][4][4];
@@ -216,19 +220,124 @@ void translation_matric(float IK_matric [4][4], float Rx,float Ry,float Rz,float
 
 int reaching_space(float IK_matric [4][4]){
     float r = sqrt (IK_matric[0][3]*IK_matric[0][3] + IK_matric[1][3]*IK_matric[1][3] + IK_matric[2][3]*IK_matric[2][3]);
-    //flexible space r <= 350mm
-    //reachable space r <= 650mm
+    //Dextruos Workspace r <= 350mm. in this workspace the solution give all solution
+    //Reachable workspace r <= 650mm in this workapace it give < 8 solution
+    //Unreachable r > 650mm. in this workapace well you know 
     if (r <= 350){
-        cout << "in flexible space" <<endl;
+        cout << "in Dextruos Workspace" <<endl;
         return 0;
     }else if(r <= 650){
-        cout << "in reachable space."<<endl;
+        cout << "in Reachable workspace"<<endl;
         return 1;
     }else {
-        cout << "unreachable / no sulution" <<endl;
+        cout << "Unreachable / No sulution" <<endl;
         return 2;
     }
 
+}
+
+void V2R_transform (float virtual_angle[6],float real_angle[6])
+{   
+    // this part need to be confirm from LGY
+    real_angle[0] = virtual_angle[0]; // need to be confirm
+    real_angle[1] = -virtual_angle[1]; 
+    real_angle[2] = virtual_angle[2]+1.25*PI; 
+    real_angle[3] = virtual_angle[3];
+    real_angle[4] = -virtual_angle[4]+0.75*PI;
+    real_angle[5] = virtual_angle[5];
+
+}
+
+
+void R2V_transform (float virtual_angle[6],float real_angle[6])
+{   
+    // this part need to be confirm from LGY
+    virtual_angle[0] = real_angle[0]; // need to be confirm
+    virtual_angle[1] = -real_angle[1]; 
+    virtual_angle[2] = real_angle[2]-1.25*PI; 
+    virtual_angle[3] = real_angle[3];
+    virtual_angle[4] = -real_angle[4]-0.75*PI;
+    virtual_angle[5] = real_angle[5];
+
+}
+
+int IK_BestSol(float joint_angle_result [8][6], float cur_joint_angle[6])
+{
+
+    float lowest_dist=100000;
+    short best_index = -1;
+
+    //exclude impossible result 
+    for (int i =0; i<8;i++){
+        valid_result[i]=true;
+        for (int j=0;j<6;j++){
+            // exclude nan result
+            if (isnan(joint_angle_result[i][j])){
+                valid_result[i]=false;
+                break;
+            }
+
+            // enforce result in -PI to +PI
+            if (joint_angle_result[i][j]>PI){
+                joint_angle_result[i][j] -= 2*PI;
+            }
+            else if (joint_angle_result[i][j]< -PI){
+                joint_angle_result[i][j] += 2*PI;
+            }
+            
+            // exclude those out of angle limit
+            if (j==0 && (joint_angle_result[i][j]>0.94444*PI || joint_angle_result[i][j]<-0.94444*PI)){
+                valid_result[i]=false;
+                break;
+            }else if (j==1 && (joint_angle_result[i][j]>0 || joint_angle_result[i][j]<-0.75*PI)){
+                valid_result[i]=false;
+                break;
+
+            }else if (j==2 && (joint_angle_result[i][j]>0.25*PI || joint_angle_result[i][j]<-1.75*PI)){
+                valid_result[i]=false;
+                break;
+
+            }else if (j==3 && (joint_angle_result[i][j]>0.75*PI || joint_angle_result[i][j]<-0.75*PI)){
+                valid_result[i]=false;
+                break;
+
+            }else if (j==4 && (joint_angle_result[i][j]>0.75*PI || joint_angle_result[i][j]<-0.75*PI)){
+                valid_result[i]=false;
+                break;
+
+            }else if (j==5 && (joint_angle_result[i][j]>0.75*PI || joint_angle_result[i][j]<-0.75*PI)){
+                valid_result[i]=false;
+                break;
+            }
+            
+        }
+    }
+
+    // compute the lowest travel distance
+    for (int i=0;i<8;i++){
+        if (valid_result[i]==true){
+            float temp_dist=0;
+            for (int j=0;j<6;j++){
+                // closest distance calulate of target and current angle
+                float cur_dis = abs(joint_angle_result[i][j]-cur_joint_angle[j]);
+                if (cur_dis>PI){
+                    cur_dis = abs(cur_dis-2*PI);
+                }
+                // weighted distance summation of target index i (weight = (5-j)*(5-j) ) this can be adjust
+                // in here weighted is quadratic in order to reduce the movement of first few joint angle
+                temp_dist += (5-j)*(5-j) * cur_dis;
+            }
+            // cout << "index:  "<< i<< "    distance   "<< temp_dist<<endl;
+            if (temp_dist<lowest_dist){
+                
+                lowest_dist = temp_dist;
+                best_index =i;
+            }
+        }
+    }
+
+    
+    return best_index;
 }
 
 
@@ -264,6 +373,14 @@ void print_fk_result()
 void print_IK_result (int id)
 {
     cout << "--------------------------------"<<endl;
+    cout << "vaild set:"<<endl;
+    for (int i=0;i<8;i++){
+        cout << valid_result[i]<< "\t";
+    }
+    cout <<endl;
+    cout << "optimal solution index:"<<optimal_index << endl;
+    cout << "--------------------------------"<<endl;
+
     cout << "IK_result:"<<endl;
     for (int j=0; j<8;j++){
         for (int k=0; k<6;k++){
@@ -275,6 +392,7 @@ void print_IK_result (int id)
         }
         cout<<endl;
     }
+    
     cout << "--------------------------------"<<endl;
 
 }
@@ -322,6 +440,7 @@ int main (){
 
     //calcutation for the result that from previous FK 
     IK_calculation(fk_matric_result);
+    optimal_index = IK_BestSol(joint_angle_result,cur_angle);
     print_IK_result (1);
 
     //choosing one of the result from IK reuslt and test does it give right coordinate matric
