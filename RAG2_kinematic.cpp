@@ -3,7 +3,7 @@
 
 
 // Matrix to store the transformation matrix for each link. for Forward kinematic
-float fk_matric [6][4][4];
+float fk_matric [7][4][4];
 
 
 void multiply(float mat1[4][4],
@@ -22,14 +22,14 @@ void multiply(float mat1[4][4],
 
 void reset_fk_matric (){
     //  clear previous link matric 
-    for (int i=0; i<6;i++){
+    for (int i=0; i<7;i++){
         for (int j=0; j<4;j++){
             for (int k=0; k<4;k++){
                 fk_matric[i][j][k] = 0;
     }}}
 
     // init value 
-    for (int i=0; i<6;i++){
+    for (int i=0; i<7;i++){
         fk_matric [i][0][0] = cos( DH_value[i][3]  );
         fk_matric [i][0][1] = - sin( DH_value[i][3]  );
         fk_matric [i][0][3] = DH_value[i][1];
@@ -46,6 +46,14 @@ void reset_fk_matric (){
 
         fk_matric [i][3][3] = 1;
     }
+    // init for the end joint translation joint_7 which is a fix joint angle 0
+        fk_matric [6][0][0] = 1;
+        fk_matric [6][0][1] = 0;
+        fk_matric [6][1][0] = 0;
+        fk_matric [6][1][1] = 1;
+        fk_matric [6][2][0] = 0;
+        fk_matric [6][2][1] = 0;
+
 
     // clear previous result
     for (int i=0; i<4;i++){
@@ -79,12 +87,13 @@ void FK_calculation (float joint_angle[6]){
         fk_matric [i][2][1] = cos(joint_angle[i] ) * sin( DH_value[i][0] );
     
     }
+    // start from the end joint 7
     float temp_result [4][4];
-    memcpy (temp_result, fk_matric[5], sizeof(fk_matric_result));
+    memcpy (temp_result, fk_matric[6], sizeof(fk_matric_result));
 
 
     // metric calculation for forward kinematic
-    for (int i =4; i>=0 ; i--)
+    for (int i =5; i>=0 ; i--)
     {
         multiply(fk_matric[i],temp_result,fk_matric_result);
         memcpy(temp_result,fk_matric_result,sizeof(fk_matric_result));
@@ -96,6 +105,14 @@ void FK_calculation (float joint_angle[6]){
 
 void IK_calculation(float IK_matric [4][4])
 {
+/////////////////////// pre-process //////////////////////////////
+    // translate from tool coord to wrist coord
+    float temp_IK [4][4];
+    memcpy (temp_IK, IK_matric,64); 
+    multiply(temp_IK,inv_Joint_7_matrix,IK_matric);
+
+
+    // init fixed parameter for later use 
     float a2 = DH_value[2][1];
     float d4 = DH_value[3][2];
     float px = IK_matric[0][3]; 
@@ -147,7 +164,7 @@ void IK_calculation(float IK_matric [4][4])
         float s23   = (-(a2*c3)*pz + ((c1*px)+(s1*py))*(-d4+(a2*s3))) / ((pz*pz)+((c1*px+s1*py)*(c1*px+s1*py)));
         // If the angle of joint 5 is zero, then joint 4 and joint 6 are collinear. The angle of joint 4 can be chosen arbitrarily. 
         // this if case is to detect is it colinear. And i arbitrarily chose the angle 0 as joint4 
-        // by chosing 0.01. if the angle of joint 5 is smaller than 0.8 degree then joint 4 is zero 
+        // by chosing 0.01. if the angle of joint 5 is smaller than 0.8 degree then joint 4 is zero (0.8 is depand of differnt computer) 
         if (abs((-r13*s1)+(r23*c1))<0.01 && abs((-r13*c1*c23)-(r23*s1*c23)+(r33*s23))<0.01 ){
              joint_angle_result[0+i][3] =0;
         }else{
@@ -197,6 +214,22 @@ void translation_matric(float IK_matric [4][4], float Rx,float Ry,float Rz,float
 
 }
 
+int reaching_space(float IK_matric [4][4]){
+    float r = sqrt (IK_matric[0][3]*IK_matric[0][3] + IK_matric[1][3]*IK_matric[1][3] + IK_matric[2][3]*IK_matric[2][3]);
+    //flexible space r <= 350mm
+    //reachable space r <= 650mm
+    if (r <= 350){
+        cout << "in flexible space" <<endl;
+        return 0;
+    }else if(r <= 650){
+        cout << "in reachable space."<<endl;
+        return 1;
+    }else {
+        cout << "unreachable / no sulution" <<endl;
+        return 2;
+    }
+
+}
 
 
 void print_DH_value()
