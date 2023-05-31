@@ -1,7 +1,7 @@
 /*
-auther: kaming
-file name: RAG2_kinematic.cpp
-project: forward and inverse kinematics for a RAG2 robotic arm
+Autor: Kaming
+Dateiname: RAG2_kinematic.cpp
+Projekt: Vorwärts- und Inverskinematik für einen RAG2-Roboterarm
 */
 
 #include "RAG2_kinematic.h"
@@ -218,6 +218,29 @@ void translation_matric(float IK_matric [4][4], float Rx,float Ry,float Rz,float
 
 }
 
+void translation_matric(float IK_matric [4][4], float qx,float qy,float qz,float qw,float x,float y,float z){
+    IK_matric[0][0]= 1-2*qy*qy - 2*qz*qz;
+    IK_matric[0][1]= 2*qx*qy - 2*qz*qw;
+    IK_matric[0][2]= 2*qx*qz + 2*qy*qw;
+    IK_matric[0][3]= x;
+
+    IK_matric[1][0]= 2*qx*qy + 2*qz*qw;
+    IK_matric[1][1]= 1-2*qx*qx - 2*qz*qz;
+    IK_matric[1][2]= 2*qy*qz - 2*qx*qw;
+    IK_matric[1][3]= y;
+
+    IK_matric[2][0]= 2*qx*qz - 2*qy*qw;
+    IK_matric[2][1]= 2*qy*qz + 2*qx*qw;
+    IK_matric[2][2]= 1-2*qx*qx - 2*qy*qy;
+    IK_matric[2][3]= z;
+
+    IK_matric[3][0]= 0;
+    IK_matric[3][1]= 0;
+    IK_matric[3][2]= 0;
+    IK_matric[3][3]= 1;
+
+}
+
 int reaching_space(float IK_matric [4][4]){
     float r = sqrt (IK_matric[0][3]*IK_matric[0][3] + IK_matric[1][3]*IK_matric[1][3] + IK_matric[2][3]*IK_matric[2][3]);
     //Dextruos Workspace r <= 350mm. in this workspace the solution give all solution
@@ -271,13 +294,13 @@ int IK_BestSol(float joint_angle_result [8][6], float cur_joint_angle[6])
     for (int i =0; i<8;i++){
         valid_result[i]=true;
         for (int j=0;j<6;j++){
-            // exclude nan result
+            // exclude NaN result
             if (isnan(joint_angle_result[i][j])){
                 valid_result[i]=false;
                 break;
             }
 
-            // enforce result in -PI to +PI
+            // enforce result between -PI to +PI
             if (joint_angle_result[i][j]>PI){
                 joint_angle_result[i][j] -= 2*PI;
             }
@@ -445,7 +468,7 @@ int main (){
 
     //choosing one of the result from IK reuslt and test does it give right coordinate matric
     reset_fk_matric ();
-    FK_calculation (joint_angle_result[3]);
+    FK_calculation (joint_angle_result[optimal_index]);
     print_fk_result();
 
     // // calculation from direct matric calculation

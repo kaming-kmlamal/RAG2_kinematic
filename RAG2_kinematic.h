@@ -81,10 +81,16 @@ void FK_calculation (float joint_angle[6]);
 // inverse kinematic calculation
 void IK_calculation(float IK_matric [4][4]);
 
-// construction of translation_matric for IK input. using the x-y-z fixed angle systems
-// x-y-z fixed coordinate is mean by first rotate x axis by Rx then y-axis by Ry then z-axis by Rz. To perform rotation of a coordinate
+// construction of translation_matric for IK input. using the x-y-z fixed angle systems or z-y-x Euler angle systems
+// x-y-z fixed coordinate is mean by first rotate x axis by Rx then y-axis by Ry then z-axis by Rz. IN fixed coord To perform rotation of a coordinate
+// Z-Y-X Euler coordinate is mean by first rotate Z-axis by Rz then y-axis by Ry then X-axis by Rx. IN Rotating coord To perform rotation of a coordinate
 // the last three parameter is is the tranlation from A to B by x-asix x mm then y asix y mm then z asix z mm
 void translation_matric(float IK_matric [4][4], float Rx,float Ry,float Rz,float x,float y,float z);
+
+// construction of translation_matric for IK input. using the Euler parameter/ Quaternion
+// Please reference to the bood and https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm
+// i did not test the matrix currently. Need to be tested!
+void translation_matric(float IK_matric [4][4], float qx,float qy,float qz,float qw,float x,float y,float z);
 
 // For giving input coordinate, deduct that the coord is it reachable
 // Dextruos Workspace r <= 350mm return 0
