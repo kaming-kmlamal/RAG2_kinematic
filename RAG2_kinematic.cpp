@@ -363,6 +363,37 @@ int IK_BestSol(float joint_angle_result [8][6], float cur_joint_angle[6])
     return best_index;
 }
 
+re_info ik_general (float qx,float qy,float qz,float qw,float x,float y,float z,float* const cur_joint_angle){
+    re_info re_data;
+    float IK_matric [4][4];
+    translation_matric(IK_matric ,qx, qy, qz, qw, x, y, z);
+    // print_IK_matric(IK_matric);
+    if(reaching_space(IK_matric) == 2){  
+        re_data.valid = 0;
+        memcpy(re_data.joint_state,cur_joint_angle,sizeof(re_data.joint_state));
+
+        return re_data;
+    }
+    re_data.valid = 1;
+    reset_ik_matric ();
+    IK_calculation(IK_matric);
+    optimal_index = IK_BestSol(joint_angle_result , cur_joint_angle);
+    if(optimal_index == -1){  
+        re_data.valid = 0;
+        memcpy(re_data.joint_state,cur_joint_angle,sizeof(re_data.joint_state));
+        return re_data;
+    }
+    memcpy(re_data.joint_state,joint_angle_result[optimal_index],sizeof(re_data.joint_state));
+
+    return re_data;
+
+}
+
+void print_re_data(re_info re_data){
+    cout << "--------------------------------"<<endl;
+    cout << "is it vaild: " << re_data.valid <<endl;
+    print_joint_angle(re_data.joint_state ,1);
+}
 
 void print_DH_value()
 {
@@ -477,6 +508,8 @@ int main (){
     // IK_calculation(IK_matric);
     // print_IK_result (1);
 
+    // full 
+    print_re_data(ik_general( -0.2176648,0.6299306,-0.1469676, 0.7308967 ,-187.784,19.9533,251.666,cur_angle));
 
 
 }

@@ -18,7 +18,7 @@ using namespace std;
 // joint state value for forward kinematic calculation (FK input) 
 // it should be in radian. every thing here is radian
 // the angle is limit from -PI to PI !
-float joint_angle[6]={(70*PI)/180, (-70*PI)/180,(-20*PI)/180,(50*PI)/180,(-80*PI)/180,(20*PI)/180};
+float joint_angle[6]={(180*PI)/180, (-70*PI)/180,(-20*PI)/180,(50*PI)/180,(-170*PI)/180,(20*PI)/180};
 
 //testing// current angle
 float cur_angle[6]={(-100*PI)/180, (-60*PI)/180,(-20*PI)/180,(50*PI)/180,(-80*PI)/180,(20*PI)/180};
@@ -52,7 +52,13 @@ float inv_Joint_7_matrix [4][4]={   {   1,  0,  0,  0},
                                     {   0,  0,  1,  -150},
                                     {   0,  0,  0,  1}};
 
-
+// the return value of IK_general function 
+// valid = 1 mean that the there is a solution. otherwise
+// joint_state is the return solution of six joint anlge
+struct re_info {
+    short valid;
+    float joint_state[6];
+};
 
 
 // Result of inverse kinematic. (IK output)
@@ -87,7 +93,7 @@ void IK_calculation(float IK_matric [4][4]);
 // the last three parameter is is the tranlation from A to B by x-asix x mm then y asix y mm then z asix z mm
 void translation_matric(float IK_matric [4][4], float Rx,float Ry,float Rz,float x,float y,float z);
 
-// construction of translation_matric for IK input. using the Euler parameter/ Quaternion
+// construction of translation_matric for IK input. using the Euler parameter/ Quaternion with Hamilton convention
 // Please reference to the bood and https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm
 // i did not test the matrix currently. Need to be tested!
 void translation_matric(float IK_matric [4][4], float qx,float qy,float qz,float qw,float x,float y,float z);
@@ -109,6 +115,9 @@ void R2V_transform (float virtual_angle[6],float real_angle[6]);
 // return 0 to 7 mean there is a optimal solution. return -1 mean no solution
 // Die Rückgabe von 0 bis 7 bedeutet, dass es eine optimale Lösung gibt. Die Rückgabe von -1 bedeutet, dass es keine Lösung gibt
 int IK_BestSol(float joint_angle_result [8][6],float cur_joint_angle[6]);
+
+
+re_info ik_general (float qx,float qy,float qz,float qw,float x,float y,float z,float cur_joint_angle[6]);
 
 void print_DH_value();
 
