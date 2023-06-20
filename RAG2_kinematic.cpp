@@ -2,13 +2,15 @@
  * @file  RAG2_kinematic.cpp
  * @author kaming (kmlamal@connect.ust.hk)
  * @brief forward and inverse kinematics for a RAG2 robotic arm
- * @version 0.1
- * @date 2022-6-5
+ * @version 0.2
+ * @date 2022-6-21 
  *
  * 
  */
 
-#include "RAG2_kinematic.hpp"
+#include "RAG2_kinematic.hpp" // off-ros
+// #include <rag2_kinematic/RAG2_kinematic.hpp> // on-ros
+
 
 RAG2_kinematic::RAG2_kinematic(float link1, float link2, float link3,float init_angle[6])    
     : DH_value       {  {0,0,0,init_angle[0]},
@@ -25,20 +27,25 @@ RAG2_kinematic::RAG2_kinematic(float link1, float link2, float link3,float init_
 
     //////////////////init forward kinematic matric///////////////////////////
     for (int i=0; i<7;i++){
-        fk_matric [i][0][0] = cos( DH_value[i][3]  );
-        fk_matric [i][0][1] = - sin( DH_value[i][3]  );
+        float sini0 = sin(DH_value[i][0]);
+        float sini3 = sin(DH_value[i][3]);
+        float cosi0 = cos(DH_value[i][0]);
+        float cosi3 = cos(DH_value[i][3]);
+
+        fk_matric [i][0][0] = cosi3;
+        fk_matric [i][0][1] = -sini3;
         fk_matric [i][0][2] =0;
         fk_matric [i][0][3] = DH_value[i][1];
 
-        fk_matric [i][1][0] = sin(DH_value[i][3] ) * cos( DH_value[i][0] );
-        fk_matric [i][1][1] = cos(DH_value[i][3] ) * cos( DH_value[i][0] );
-        fk_matric [i][1][2] = -sin(DH_value[i][0]);
-        fk_matric [i][1][3] = -sin(DH_value[i][0]) *  DH_value[i][2];
+        fk_matric [i][1][0] = sini3 * cosi0;
+        fk_matric [i][1][1] = cosi3* cosi0;
+        fk_matric [i][1][2] = -sini0;
+        fk_matric [i][1][3] = -sini0 *  DH_value[i][2];
 
-        fk_matric [i][2][0] = sin(DH_value[i][3] ) * sin(DH_value[i][0] );
-        fk_matric [i][2][1] = cos(DH_value[i][3] ) * sin( DH_value[i][0] );
-        fk_matric [i][2][2] = cos(DH_value[i][0]);
-        fk_matric [i][2][3] = cos(DH_value[i][0]) *  DH_value[i][2];
+        fk_matric [i][2][0] = sini3 * sini0;
+        fk_matric [i][2][1] = cosi3 * sini0;
+        fk_matric [i][2][2] = cosi0;
+        fk_matric [i][2][3] = cosi0 *  DH_value[i][2];
 
         fk_matric [i][3][0] = 0;
         fk_matric [i][3][1] = 0;
@@ -86,12 +93,18 @@ void RAG2_kinematic::FK_calculation (float joint_angle[6])
     //init and update value into the link martic
     for (int i=0; i<6;i++)
     {
-        fk_matric [i][0][0] = cos( joint_angle[i]  );
-        fk_matric [i][0][1] = - sin( joint_angle[i]  );
-        fk_matric [i][1][0] = sin(joint_angle[i] ) * cos( DH_value[i][0] );
-        fk_matric [i][1][1] = cos(joint_angle[i] ) * cos( DH_value[i][0] );
-        fk_matric [i][2][0] = sin(joint_angle[i] ) * sin( DH_value[i][0] );
-        fk_matric [i][2][1] = cos(joint_angle[i] ) * sin( DH_value[i][0] );
+        float siniJoint = sin(joint_angle[i]);
+        float cosiJoint = cos(joint_angle[i]);
+        float cosiDH    = cos( DH_value[i][0] );
+        float siniDH    = sin( DH_value[i][0] );
+
+        
+        fk_matric [i][0][0] = cosiJoint;
+        fk_matric [i][0][1] = -siniJoint;
+        fk_matric [i][1][0] = siniJoint * cosiDH;
+        fk_matric [i][1][1] = cosiJoint * cosiDH;
+        fk_matric [i][2][0] = siniJoint * siniDH;
+        fk_matric [i][2][1] = cosiJoint * siniDH;
     
     }
     // start from the end joint 7
@@ -206,19 +219,26 @@ void RAG2_kinematic::IK_calculation(float IK_matric [4][4])
 }
 
 void RAG2_kinematic::translation_matric(float IK_matric [4][4], float Rx,float Ry,float Rz,float x,float y,float z){
-    IK_matric[0][0]= cos(Rz)*cos(Ry);
-    IK_matric[0][1]= cos(Rz)*sin(Ry)*sin(Rx)-sin(Rz)*cos(Rx);
-    IK_matric[0][2]= cos(Rz)*sin(Ry)*cos(Rx)+sin(Rz)*sin(Rx);
+    float sinRx = sin(Rx);
+    float sinRy = sin(Ry);
+    float sinRz = sin(Rz);
+    float cosRx = cos(Rx);
+    float cosRy = cos(Ry);
+    float cosRz = cos(Rz);
+
+    IK_matric[0][0]= cosRz*cosRy;
+    IK_matric[0][1]= cosRz*sinRy*sinRx-sinRz*cosRx;
+    IK_matric[0][2]= cosRz*sinRy*cosRx+sinRz*sinRx;
     IK_matric[0][3]= x;
 
-    IK_matric[1][0]= sin(Rz)*cos(Ry);
-    IK_matric[1][1]= sin(Rz)*sin(Ry)*sin(Rx)+cos(Rz)*cos(Rx);
-    IK_matric[1][2]= sin(Rz)*sin(Ry)*cos(Rx)-cos(Rz)*sin(Rx);
+    IK_matric[1][0]= sinRz*cosRy;
+    IK_matric[1][1]= sinRz*sinRy*sinRx+cosRz*cosRx;
+    IK_matric[1][2]= sinRz*sinRy*cosRx-cosRz*sinRx;
     IK_matric[1][3]= y;
 
-    IK_matric[2][0]= -sin(Ry);
-    IK_matric[2][1]= cos(Ry)*sin(Rx);
-    IK_matric[2][2]= cos(Ry)*cos(Rx);
+    IK_matric[2][0]= -sinRy;
+    IK_matric[2][1]= cosRy*sinRx;
+    IK_matric[2][2]= cosRy*cosRx;
     IK_matric[2][3]= z;
 
     IK_matric[3][0]= 0;
@@ -314,7 +334,8 @@ void RAG2_kinematic::IK_BestSol()
                 joint_angle_result[i][j] += 2*PI;
             }
             
-            // exclude those out of angle limit
+            // exclude those out of angle limit 
+            // need to be extents
             if (j==0 && (joint_angle_result[i][j]>0.94444*PI || joint_angle_result[i][j]<-0.94444*PI)){
                 valid_result[i]=false;
                 break;
@@ -399,19 +420,20 @@ void RAG2_kinematic::ik_general (float qx,float qy,float qz,float qw,float x,flo
 }
 
 int main (){
-    float cur_angle[6]={(-92*PI)/180, (-60*PI)/180,(-20*PI)/180,(50*PI)/180,(-80*PI)/180,(20*PI)/180};
+    float cur_angle[6]={(0*PI)/180, (-20*PI)/180,(0*PI)/180,(7.6976*PI)/180,(20*PI)/180,(10*PI)/180};
     float joint_angle[6]={(90*PI)/180, (-70*PI)/180,(-20*PI)/180,(50*PI)/180,(-170*PI)/180,(20*PI)/180};
     
 
     RAG2_kinematic RAG2(250,250,150,cur_angle);
     RAG2.set_cur_angle(cur_angle);
 
-    RAG2.FK_calculation(joint_angle);
+    RAG2.FK_calculation(cur_angle);
     float (*a)[4] = RAG2.return_fk_result();
 
-    RAG2.ik_general(-0.3676381, 0.2506608, -0.5720545, 0.689032, 114.907, 428.597, 196.609);// valid result
-    RAG2.ik_general( -0.2176648,0.6299306,-0.1469676, 0.7308967 ,-187.784,19.9533,251.666);// invalid result
-
+    // RAG2.ik_general(-0.3676381, 0.2506608, -0.5720545, 0.689032, 114.907, 428.597, 196.609);// valid result
+    // RAG2.ik_general( -0.2176648,0.6299306,-0.1469676, 0.7308967 ,-187.784,19.9533,251.666);// invalid result
+    RAG2.ik_general( 0.9884505, -0.1497948, -0.0020009, -0.0228703  ,320.863,6.87174,-299.26); // cur angle
+    
 
 
 
